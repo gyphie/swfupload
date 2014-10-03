@@ -1,6 +1,20 @@
- * SWFUpload by Jacob Roberts, Nov 2007, www.swfupload.org, swfupload.googlecode.com
+ * SWFUpload by Jacob Roberts, March 2008, www.swfupload.org, swfupload.googlecode.com
 
- * --------- Version 2.1.0 -----------
+ * --------- Version 2.1.0 Beta 2-----------
+ * = Fixed bug in XHTML fix where it wasn't split correctly by Flash
+ * = Fixed file params "undefined" in debug output
+ * + Added requeue_on_error settings so HTTP/IO/Security errors requeue the file instead of discarding it.
+       This will affect the queue plugin (if an error is occurring the file will be reuploaded and reuploaded).
+ * = Fixed HTTP/IO error behavior.  We'll see how this goes Flash 9 is supposed to call HTTPError followed by an IO error but I suspect they come out of orde sometimes.
+ * = Fixed invalid characters in file param names.  Worked around flash bug by escaping the names. Should be transparent to devs.
+ * = Fixed missing upload URL logic so it fires consistently
+ * = Fixed file params not being sent when useQueryString is true
+ * + Added SWFObject plugin and demo.
+ * + Added CookieBug demo to demonstrate what they bug really is all about.
+ * + Added VB.Net version of the Application Demo
+ 
+ 
+ * --------- Version 2.1.0 Beta 1-----------
  * + Added allowScriptAccess="always" to the embed/object elements so the SWF can be served from different domains.
  * = Fixed a type-o in the debug output that prevented the instance id (movieName) from displaying. - Thx Joel
  * + Rewrote SWFUpload.js for better code reuse based on sample code from batiste.bieler (thanks!!!)
@@ -14,6 +28,8 @@
  * + Fixed use of & producing invalid XHTML in the <object> and <embed> tags.
  * - Removed the use of the embed tag (using the <object> sample from the Flash Satay method)
  * = Updated plugins to work with code rewrite changes.
+ * = Extracted FileProgress object in to its own file.
+ * + Added addPostParam and removePostParam functions
 
  * --------- Version 2.0.2 -----------
  * = Fixed a bug where post params could not be added to the current file (because it is removed from the queue when it becomes current)
@@ -189,7 +205,7 @@
 
  * -------- -------- -------- -------- -------- -------- -------- --------
  * SWFUpload 0.7: Flash upload dialog - http://profandesign.se/swfupload/
- * SWFUpload is (c) 2006 Lars Huring and Mammon Media and is released under the MIT License:
+ * SWFUpload is (c) 2006 Lars Huring, Olov Nilzén and Mammon Media and is released under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
  * -------- -------- -------- -------- -------- -------- -------- --------
 

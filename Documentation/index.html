@@ -117,6 +117,8 @@
 						<li><a href="#getStats">getStats</a></li>
 						<li><a href="#setStats">setStats</a></li>
 						<li><a href="#getFile">getFile</a></li>
+						<li><a href="#addPostParam">addPostParam</a></li>
+						<li><a href="#removePostParam">removePostParam</a></li>
 						<li><a href="#addFileParam">addFileParam</a></li>
 						<li><a href="#removeFileParam">removeFileParam</a></li>
 						<li><a href="#setUploadURL">setUploadURL</a></li>
@@ -483,6 +485,14 @@ swfu.customSettings = {
 	<p>When getting a file by file_id only files in the queue are available.  If the file is not found null is returned.</p>
 	<p>When getting a file by index all queued (or files that generated a queue error) are available.  If the index is out of range then null is returned</p>
 	
+	<h4><a name="addPostParam"></a>void addPostParam(<span class="parameter">name</span>, <span class="parameter">value</span>)</h4>
+	<p>The addPostParam function adds a name/value pair that will be sent in the POST for all files uploaded.</p>
+	<p>The name/value pair will also appear in the post_params setting.</p>
+
+	<h4><a name="removePostParam"></a>void removePostParam(<span class="parameter">name</span>)</h4>
+	<p>The removePostParam function removes a name/value pair from the values sent with the POST for file uploads.</p>
+	<p>The name/value pair is also be removed from the post_params setting.</p>
+
 	<h4><a name="addFileParam"></a>bool addFileParam(<span class="parameter">file_id</span>, <span class="parameter">name</span>, <span class="parameter">value</span>)</h4>
 	<p>The addFileParam function adds a name/value pair that will be sent in the POST with the file specified by the file_id parameter.</p>
 	<p>The name/value pair will only be sent with the file it is added to.  To send name/value pairs with all uploads use the post_param setting.</p>
@@ -595,6 +605,7 @@ swfu.customSettings = {
 		"post_param_name_n" : "post_param_value_n"
 	},
 	use_query_string : false,
+	requeue_on_error : false,
 	file_types : "*.jpg;*.gif",
 	file_types_description: "Web Image Files",
 	file_size_limit : "1024",
@@ -644,6 +655,23 @@ swfu.customSettings = {
 	<h5>use_query_string</h5>
 	<p>
 		<strong>(Flash 9 only)</strong> The use_query_string setting may be true or false.  This value indicates whether SWFUpload should send the post_params and file params on the query string or the post. This setting was introduced in SWFUpload v2.1.0.
+	</p>
+
+	<h5>requeue_on_error</h5>
+	<p>
+		The requeue_on_error setting may be true or false.  When this setting is true any files that has an
+		uploadError (excluding fileQueue errors and the FILE_CANCELLED uploadError) is returned to the front of
+		the queue rather than being discarded.  The file can be uploaded again if needed.  To remove the file from the
+		queue the cancelUpload method must be called.
+	</p>
+	<p>
+		All the events associated with a failed upload are still called and so the requeuing the failed upload can conflict
+		with the Queue Plugin (or custom code that uploads the entire queue).  Code that automatically uploads the next file
+		in the queue will upload the failed file over and over again if care is not taken to allow the failing upload to be
+		cancelled.
+	</p>
+	<p>
+		This setting was introduced in SWFUpload v2.1.0.
 	</p>
 
 	<h5>file_types</h5>
@@ -774,16 +802,26 @@ swfu.customSetting["a_dom_setting"].style.visibility = "hidden";</code>
 	<p>With SWFUpload v2.0 several plugins have been introduced.  They are provided to help with common tasks associated with implementing SWFUpload.</p>
 	<p>Currently most of the documentation for using the plugins is contained in the plugin JavaScript file.</p>
 	
+	<h3>SWFObject</h3>
+	<p>
+		The SWFObject plugin uses the <a href="http://code.google.com/p/swfobject/">SWFObject library</a> to handle the embedding
+		of the SWFUpload Flash Component into the page.
+	</p>
+	<p>
+		This plugin also provides support for Document Ready loading and Flash Version Detection.  Usage details are documented
+		in the plugin file itself.
+	</p>
+	<p>
+		Using this plugin can eliminate the flicker seen in the Graceful Degradation plugin and provides events for loading failure.
+	</p>
+	
 	<h3>Graceful Degradation</h3>
+	
+	<p>This plugin has been superseded by the SWFObject plugin.</p>
 	
 	<p>This plugin provides additional settings and logic for automatically hiding and showing page elements based on
 	whether SWFUpload loads.</p>
 
-	<h3>Document Ready</h3>
-	<p>This plugin provides some functions for loading SWFUpload as soon as possible, rather than waiting until window.onload fires.
-	This is similar to Document Ready functionality found in JavaScript Libraries like Prototype and jQuery.  It should not be mixed
-	with other Document Ready libraries</p>
-	
 	<h3>SWFUpload v1.0.2 Compatibility</h3>
 	<p>Creates compatibility with v1.0.2.  Using this plugin you should be able to drop SWFUpload v2.0 in to a v1.0.2 page.
 	This plugin is not supported and is only intended for users of SWFUpload v1.0.2 who wish to upgrade to v2 without recoding their pages.</p>
@@ -792,50 +830,48 @@ swfu.customSetting["a_dom_setting"].style.visibility = "hidden";</code>
 	<p>In response to the Flash Cookie Bug the Cookies Plugin automatically retrieves your browser's cookies and sends them
 	with the uploads.  The are sent as POST or GET variables to the upload url.</p>
 	
-	<h3>Flash Detection Kit</h3>
-	<p>This plugin is yet to be developed</p>
-	<p>This plugin will implement Adobe's Flash Detection Kit for SWFUpload providing more advanced Flash Detection and upgrade features.</p>
-	
 	<h3>Queue Handling</h3>
 	<p>This plugin provides Queue Handling features such as entire queue uploading, entire queue cancelling and automatic starting of uploads after being queued.</p>
 
 	<h2><a name="knownissues"></a>Known Issues</h2>
 	<p>The Flash Player and many Browsers have bugs that have a direct impact on the performance of SWFUpload.  While we have worked
-	hard to get around many issues there are some things we cannot fix.</p>
+	hard to get around many issues there are some things that cannot be fix.</p>
 	
 	<h3>Cancelling in Linux</h3>
 	<p>Flash 8 and older Flash 9 Players for Linux cause the browser to crash if an upload is cancelled.  Newer Flash 9 Players behave better.</p>
 	
-	<h3>Progress in Linux</h3>
+	<h3>Upload Progress in Linux</h3>
 	<p>The Flash Player in Linux sends a single uploadProgress event after the file has finished uploading.</p>
 	
 	<h3>Proxies</h3>
 	<p>The Flash Player may not properly use proxies.  It does not handle authenticating proxies well (if at all) and will some-times crash.</p>
 	<p>Some anti-virus software uses a proxy to scan uploads and cause SWFUpload to believe the entire file has been uploaded.  SWFUpload will fire uploadProgress events very quickly
-	and will then wait until the proxy completes its upload.</p>
+	until it reaches 100% and will then seem to pause until the proxy completes uploading the file to the server.</p>
 	
 	<h3>Apache mod_security</h3>
-	<p>Apache's mod_security validates POST to the server.  Flash Player has implemented an invalid POST for file uploads and so servers implementing
+	<p>Apache's mod_security validates POST to the server.  Flash Player has implemented an edge case (there is argument as to whether it is invalid or note)
+	POST for file uploads and so servers implementing
 	mod_security will reject the upload.  mod_security can be disabled using your .htaccess file</p>
 	
 	<h3>SSL</h3>
 	<p>There have been some reports that the Flash Player cannot upload through SSL.  The issue has not been pinned down but uploading over SSL may be unreliable.</p>
 	
 	<h3>Authentication</h3>
-	<p>HTTP Authentication is not well supported by Flash Player.  Later versions of Flash Player behave better.  Old version of Flash Player would crash the browser.</p>
+	<p>HTTP Authentication is not well supported by the Flash Player.  Later versions of Flash Player behave better.  Old version of Flash Player would crash the browser.</p>
 	
 	<h3>Prematurely terminated connections</h3>
 	<p>Prematurely ending the response (such as a Response.end() in ASP.Net) can sometimes cause successful uploads to be reported as failed.</p>
 	
 	<h3>Filedata in Linux</h3>
-	<p>The Filedata value (file_post_name setting) is ignored in Linux Flash Player</p>
+	<p>Changing the Filedata value (file_post_name setting) is ignored in Linux Flash Player.</p>
 	
 	<h3>uploadSuccess &amp; Server Data</h3>
-	<p>The uploadSuccess will not fire if no data is returned from the server.  This is especially problematic on the Mac Flash Player.</p>
+	<p>The uploadSuccess will not fire if no data is returned from the server.  This is especially problematic on the Mac version of the Flash Player.</p>
 	
 	<h3>Cookie issue</h3>
-	<p>On Windows the Non-IE Flash Player plugin (FireFox, Opera, Safari, etc) sends the IE cookes regardless of the browser used.  This breaks authentication and sessions for many server-side scripting technologies.</p>
-	<p>Developers should manually pass Session ID information and manually restore Sessions on the Server Side if they wish to use Sessions</p>
+	<p>On Windows the Non-IE Flash Player plugin (FireFox, Opera, Safari, etc) sends the IE cookies regardless of the browser used.  This breaks authentication and sessions for many server-side scripting technologies.</p>
+	<p>Developers should manually pass Session and Authentication cookie information and manually restore Sessions on the Server Side if they wish to use Sessions</p>
+	<p>SWFUpload package contains work-around sample code for PHP and ASP.Net</p>
 	
 	<h3>ExternalInterface bugs</h3>
 	<p>Flash Player does not properly escape data when communication with the browser/JavaScript.  SWFUpload goes to great lengths to work-around this issue.  If this
@@ -852,53 +888,20 @@ swfu.customSetting["a_dom_setting"].style.visibility = "hidden";</code>
 	on the movie element.  SWFUpload v2.0.2 has added checks which prevent swfupload_loaded from firing if the callback functions are not detected.</p>
 
 	<h3>File Dialog &amp; Page Changing</h3>
-	<p>Leaving or reloading the current page while the File Browser Dialog window is open will cause the browser to crash (all browsers, all OSs).  Most commonly this is caused by not
-	cancelling a click on an &lt;a&gt; tag where the onclick event calls the selectFile or selectFiles function.</p>
+	<p>Leaving or reloading the current page while the File Browser Dialog window is open will cause the browser to crash (all browsers, all OSs).  Most commonly this is caused by failing to
+	cancel a click event on an &lt;a&gt; tag where the onclick event calls the selectFile or selectFiles function.</p>
 	
-<div id="incompleteDocs" style="display: none;">
-	<h2>Interacting with the SWFUpload instance</h2>
+	<h3>Long Running Upload Scripts</h3>
+	<p>After Flash has uploaded the file to the webserver the upload script is executed.  This script handles the file whether that means saving it, creating a thumbnail, scanning for viruses, etc.
+	If the upload script does not return any data within 30 seconds Flash will disconnect and return an IO Error.  You can prevent this by returning characters or data while
+	the script runs (if possible).  For PHP, the script continues to run and complete successfully even though Flash has terminated the connection.  Any data returned
+	by the script after Flash has disconnected is lost.</p>
 
-	<p>Talk about the method calls</p>
-	<p>Upload method calls (stop, cancel, start)</p>
-	<p>Settings method calls (setX)</p>
-	<p>File &amp; Status methods (getStats, getFile)</p>
-
-	<h2>Using the Events</h2>
-	<p>Events should only be overridden using the settings object.  They cannot be overridden dynamically.  Overridding the events directly on the instance
-	can break the event call safety mechanisms built in to SWFUpload.</p>
-	<p>Talk about the event flow</p>
-	<p>Talk in detail about each event and what kind of things can/should be done in each</p>
-	<h2>Handling Queue Errors</h2>
-	<p>Go over error code constants and event flows</p>
-	<h2>Handling Upload Errors</h2>
-	<p>Go over error code constants and event flows</p>
-	
-	<h2>Common Coding Solutions</h2>
-	<p>Starting uploads automatically on queue</p>
-	<p>Starting the next upload automatically</p>
-	<p>Cancelling all queued uploads</p>
-	<p>JavaSCript Validation prior to upload</p>
-	<p>Sending POST values with an upload</p>
-	<p>Sending POST values with all uploads</p>
-	
-	<h2>Server-side upload handling</h2>
-	<p>Talk about how to handle uploads from SWFUpload on the server. Talk about returning errors and returning data.</p>
-	<p>Talk about HTTP Auth and SSL</p>
-	<h3>PHP</h3>
-	<h3>CakePHP</h3>
-	<h3>ASP.Net</h3>
-	<h3>Ruby on Rails</h3>
-
-	<h2>The Demos explained</h2>
-	<h3>Application Demo</h3>
-	<h3>Classic Forms Demo</h3>
-	<h3>Multiupload Demo</h3>
-	<h3>Features Demo</h3>
-
-	<h2>Browsers</h2>
-	<p>Talk about which browsers are supported and tested.</p>
-
-	<h2>History of SWFUpload</h2>
-</div>
+	<h3>Mac Issues</h3>
+	<p>Users have reported that uploading to subdomains does not work with the Mac Flash Player.</p>
+	<p>
+		Users have reported that pages that redirect (HTTP Status 302) are not handled by the Mac Flash Player.  Windows
+		clients seem to handle this issue.
+	</p>
 </body>
 </html>
