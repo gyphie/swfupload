@@ -19,7 +19,8 @@
 			// Instantiate a SWFUpload Instance
 			suo = new SWFUpload({
 				// Backend Settings
-				upload_url: "../featuresdemo/upload.php?get_name=get_value",	// I can pass query strings here if I want
+				upload_url: "upload.php?get_name=get_value",
+				assume_success_timeout: 10,
 
 				post_params: { "post_name1": "post_value1", "post_name2": "post_value2" }, 	// Here are some POST values to send. These can be changed dynamically
 				file_post_name: "Filedata",	// This is the "name" of the file item that the server-side script will receive. Setting this doesn't work in the Linux Flash Player
@@ -32,7 +33,7 @@
 				file_types_description : "All Files",
 				file_upload_limit : "10",
 
-				button_image_url : "../featuresdemo/images/button_270x22.png",
+				button_image_url : "images/button_270x22.png",
 				button_width : 270,
 				button_height : 22,
 				button_action : SWFUpload.BUTTON_ACTION.SELECT_FILES,
@@ -233,6 +234,10 @@
 									<div>
 										<label for="txtHTTPSuccess">http_success</label>
 										<input id="txtHTTPSuccess" type="text" class="textbox" />
+									</div>
+									<div>
+										<label for="txtAssumeSuccessTimeout">assume_success_timeout</label>
+										<input id="txtAssumeSuccessTimeout" type="text" class="textbox" />
 									</div>
 									<div>
 										<label for="txtFilePostName">file_post_name</label>

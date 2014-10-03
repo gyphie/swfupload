@@ -26,6 +26,7 @@ function fileDialogComplete() {
 
 function uploadStart(file) {
 	try {
+		this.customSettings.progressCount = 0;
 		updateDisplay.call(this, file);
 	}
 	catch (ex) {
@@ -36,6 +37,7 @@ function uploadStart(file) {
 
 function uploadProgress(file, bytesLoaded, bytesTotal) {
 	try {
+		this.customSettings.progressCount++;
 		updateDisplay.call(this, file);
 	} catch (ex) {
 		this.debug(ex);
@@ -65,5 +67,7 @@ function updateDisplay(file) {
 	this.customSettings.tdTimeRemaining.innerHTML = SWFUpload.speed.formatTime(file.timeRemaining);
 	this.customSettings.tdTimeElapsed.innerHTML = SWFUpload.speed.formatTime(file.timeElapsed);
 	this.customSettings.tdPercentUploaded.innerHTML = SWFUpload.speed.formatPercent(file.percentUploaded);
-	this.customSettings.tdSizeUploaded.innerHTML =SWFUpload.speed.formatBytes(file.sizeUploaded);
+	this.customSettings.tdSizeUploaded.innerHTML = SWFUpload.speed.formatBytes(file.sizeUploaded);
+	this.customSettings.tdProgressEventCount.innerHTML = this.customSettings.progressCount;
+
 }

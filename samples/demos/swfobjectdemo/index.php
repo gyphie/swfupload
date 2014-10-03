@@ -14,7 +14,7 @@ var swfu;
 SWFUpload.onload = function () {
 	var settings = {
 		flash_url : "../swfupload/swfupload.swf",
-		upload_url: "../simpledemo/upload.php",	// Relative to the SWF file
+		upload_url: "upload.php",
 		post_params: {
 			"PHPSESSID" : "NONE",
 			"HELLO-WORLD" : "Here I Am",
@@ -32,7 +32,7 @@ SWFUpload.onload = function () {
 		debug: false,
 
 		// Button Settings
-		button_image_url : "../swfobjectdemo/XPButtonUploadText_61x22.png",	// Relative to the SWF file
+		button_image_url : "XPButtonUploadText_61x22.png",
 		button_placeholder_id : "spanButtonPlaceholder",
 		button_width: 61,
 		button_height: 22,
@@ -90,8 +90,10 @@ SWFUpload.onload = function () {
 				<br />
 			</p>
 		</div>
-		<noscript style="background-color: #FFFF66; border-top: solid 4px #FF9966; border-bottom: solid 4px #FF9966; margin: 10px 25px; padding: 10px 15px;">
-			We're sorry.  SWFUpload could not load.  You must have JavaScript enabled to enjoy SWFUpload.
+		<noscript>
+			<div style="background-color: #FFFF66; border-top: solid 4px #FF9966; border-bottom: solid 4px #FF9966; margin: 10px 25px; padding: 10px 15px;">
+				We're sorry.  SWFUpload could not load.  You must have JavaScript enabled to enjoy SWFUpload.
+			</div>
 		</noscript>
 		<div id="divLoadingContent" class="content" style="background-color: #FFFF66; border-top: solid 4px #FF9966; border-bottom: solid 4px #FF9966; margin: 10px 25px; padding: 10px 15px; display: none;">
 			SWFUpload is loading. Please wait a moment...
