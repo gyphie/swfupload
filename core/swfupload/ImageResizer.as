@@ -9,8 +9,10 @@ package
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Loader;
+	import flash.errors.IOError;
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
+	import flash.events.IOErrorEvent;
 	import flash.events.EventDispatcher;
 	import flash.filters.BitmapFilter;
 	import flash.filters.BitmapFilterQuality;
@@ -71,6 +73,7 @@ package
 				
 				// Load the image data, resizing takes place in the event handler
 				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, this.loader_Complete);
+				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, this.loader_Error);
 				
 				loader.loadBytes(FileReference(event.target).data);
 			} catch (ex:Error) {
@@ -79,11 +82,21 @@ package
 				this.file = null;
 			}
 		}
+		private function loader_Error(event:IOErrorEvent):void {
+			try {
+				event.target.removeEventListener(Event.COMPLETE, this.loader_Complete);
+				event.target.removeEventListener(IOErrorEvent.IO_ERROR, this.loader_Error);
+			} catch (ex:Error) {}
+
+			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR, false, false, "Resizing: " + event.text));
+		}
+		
 		private function loader_Complete(event:Event):void {
 			try {
 				var bytes:ByteArray;
 				
 				event.target.removeEventListener(Event.COMPLETE, this.loader_Complete);
+				event.target.removeEventListener(IOErrorEvent.IO_ERROR, this.loader_Error);
 
 				var loader:Loader = Loader(event.target.loader);
 
@@ -97,13 +110,16 @@ package
 				
 				// Get the image data
 				var bmp:BitmapData = Bitmap(loader.content).bitmapData;
+				
+				loader.unload();
+				loader = null;
 
 				// Blur it a bit if it is sizing smaller
-				if (this.newWidth < loader.width || this.newHeight <= loader.height) {
+				if (this.newWidth < bmp.width || this.newHeight <= bmp.height) {
 					// Apply the blur filter that helps clean up the resized image result
 					var blurMultiplier:Number = 1.15; // 1.25;
-					var blurXValue:Number = Math.max(1, loader.width / this.newWidth) * blurMultiplier;
-					var blurYValue:Number = Math.max(1, loader.height / this.newHeight) * blurMultiplier;
+					var blurXValue:Number = Math.max(1, bmp.width / this.newWidth) * blurMultiplier;
+					var blurYValue:Number = Math.max(1, bmp.height / this.newHeight) * blurMultiplier;
 					
 					var blurFilter:BlurFilter = new BlurFilter(blurXValue, blurYValue, int(BitmapFilterQuality.LOW));
 					bmp.applyFilter(bmp, new Rectangle(0, 0, bmp.width, bmp.height), new Point(0, 0), blurFilter);
@@ -117,6 +133,7 @@ package
 				resizedBmp = new BitmapData(this.newWidth, this.newHeight, true, 0x000000);
 				resizedBmp.draw(bmp, matrix, null, null, null, true);
 				
+				bmp.dispose();
 				
 				if (this.encoder == ImageResizer.PNGENCODE) {
 					var pngEncoder:PNGEncoder = new PNGEncoder(PNGEncoder.TYPE_SUBFILTER, 1);

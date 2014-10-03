@@ -63,6 +63,8 @@
 		}
 
 		public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata"):void {
+			dispatchEvent(new Event(Event.OPEN, false, false));
+			
 			this._httpStatus = undefined;
 			this._request = request;
 			this._uploadDataFieldName = uploadDataFieldName;
@@ -89,14 +91,9 @@
 		 */
 		public function dispose(): void
 		{
-			clearInterval(this.asyncWriteTimeoutId);
-			this.removeListener();
-			this.cancel();
-
-			_loader = null;
-			_boundary = null;
-			_fileData = null;
-			_data = null;
+			try {
+				this.cancel();
+			} catch (ex:Error) {}
 		}
 
 		/**
@@ -118,17 +115,18 @@
 		{
 			var urlRequest:URLRequest = new URLRequest();
 			urlRequest.url = this._request.url;
-			urlRequest.contentType = 'multipart/form-data; boundary=' + getBoundary();
+			//urlRequest.contentType = 'multipart/form-data; boundary=' + getBoundary();
 			urlRequest.method = URLRequestMethod.POST;
 			urlRequest.data = _data;
 
 			urlRequest.requestHeaders = this._request.requestHeaders.concat();
+			urlRequest.requestHeaders.push(new URLRequestHeader('Content-Type', 'multipart/form-data; boundary=' + getBoundary()));
 			
 			this.addListener();
 			try {
 				_loader.load(urlRequest);
-			} catch (ex:Object) {
-				dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
+			} catch (ex:Error) {
+				dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR, false, false, "Exception: " + ex.message));
 				this.destroy();
 			}
 	
@@ -246,16 +244,11 @@
 			return postData;
 		}
 
-		private function onOpen(  event: Event ): void {
-			dispatchEvent(event);
-			this.destroy();
-		}
-		
 		private function onComplete( event: Event ): void
 		{
 			if (this._httpStatus === 200) {
 				dispatchEvent(event);
-				if (this._loader && this._loader.bytesTotal > 0) {
+				if (this._loader && this._loader.data.length > 0) {
 					dispatchEvent(new DataEvent(DataEvent.UPLOAD_COMPLETE_DATA, event.bubbles, event.cancelable, this._loader.data));
 				}
 			} else {
@@ -330,7 +323,10 @@
 		}
 		
 		private function destroy():void {
-			this.removeListener();
+			try {
+				this.removeListener();
+			} catch (ex:Error) {}
+
 			this._loader = null;
 			this._request = null;
 			this._boundary = null;
@@ -341,7 +337,10 @@
 			this._data = null;
 			this._httpStatus = undefined;
 		
-			clearInterval(this.asyncWriteTimeoutId);
+			try {
+				clearInterval(this.asyncWriteTimeoutId);
+			} catch (ex:Error) { }
+			
 			this.asyncWriteTimeoutId = undefined;
 		}
 	

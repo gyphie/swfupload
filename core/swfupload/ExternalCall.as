@@ -13,6 +13,10 @@ package {
 		public static function Simple(callback:String):void {
 			ExternalInterface.call(callback);
 		}
+
+		public static function SendImage(callback:String, preview_name:String, file_id:String):void {
+			ExternalInterface.call(callback, EscapeMessage(preview_name), EscapeMessage(file_id));
+		}
 		
 		public static function FileQueued(callback:String, file_object:Object):void {
 			ExternalInterface.call(callback, EscapeMessage(file_object));
@@ -61,6 +65,16 @@ package {
 			return ExternalInterface.call(callback);
 		}
 		
+		public static function Generic(callback:String, ... rest):* {
+			var escapedRest:Array = new Array();
+			for each (var i:* in rest) 
+			{
+				escapedRest.push(EscapeMessage(i));
+			}
+			
+			return ExternalInterface.call(callback, escapedRest);
+		}
+		
 		
 		/* Escapes all the backslashes which are not translated correctly in the Flash -> JavaScript Interface
 		 * 
@@ -100,8 +114,11 @@ package {
 		}
 		
 		private static function EscapeString(message:String):String {
-			var replacePattern:RegExp = /\\/g; //new RegExp("/\\/", "g");
-			return message.replace(replacePattern, "\\\\");
+			var replaceSlashPattern:RegExp = /\\/g;
+			var replaceNewLinePattern:RegExp = /\n/g;
+			var replaceCarraigeReturnPattern:RegExp = /\r/g;
+
+			return message.replace(replaceSlashPattern, "\\\\").replace(replaceNewLinePattern, "\\n").replace(replaceCarraigeReturnPattern, "\\r");
 		}
 		private static function EscapeArray(message_array:Array):Array {
 			var length:uint = message_array.length;

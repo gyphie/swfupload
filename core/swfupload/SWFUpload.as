@@ -14,7 +14,6 @@ package {
 	import flash.net.FileReferenceList;
 	import flash.net.FileReference;
 	import flash.net.FileFilter;
-	import flash.net.LocalConnection;
 	import flash.net.URLRequest;
 	import flash.net.URLRequestMethod;
 	import flash.net.URLVariables;
@@ -48,7 +47,7 @@ package {
 		}
 		
 
-		private const build_number:String = "2.5.0 2009-11-04 Alpha";
+		private const build_number:String = "2.5.0 2009-12-23 Beta 1";
 		
 		// State tracking variables
 		private var fileBrowserMany:FileReferenceList = new FileReferenceList();
@@ -70,6 +69,7 @@ package {
 		private var serverDataTimer:Timer = null;
 		private var assumeSuccessTimer:Timer = null;
 		
+		private var sizeTimer:Timer;
 		private var restoreExtIntTimer:Timer;
 		private var hasCalledFlashReady:Boolean = false;
 		
@@ -90,7 +90,10 @@ package {
 		private var debug_Callback:String;
 		private var testExternalInterface_Callback:String;
 		private var cleanUp_Callback:String;
-		private var buttonAction_Callback:String;
+		
+		private var mouseOut_Callback:String;
+		private var mouseOver_Callback:String;
+		private var mouseClick_Callback:String;
 		
 		// Values passed in from the HTML
 		private var movieName:String;
@@ -112,8 +115,8 @@ package {
 		private var buttonTextField:TextField;
 		private var buttonCursorSprite:Sprite;
 		private var buttonImageURL:String;
-		private var buttonWidth:Number;
-		private var buttonHeight:Number;
+		//private var buttonWidth:Number;
+		//private var buttonHeight:Number;
 		private var buttonText:String;
 		private var buttonTextStyle:String;
 		private var buttonTextTopPadding:Number;
@@ -123,9 +126,6 @@ package {
 		private var buttonStateOver:Boolean;
 		private var buttonStateMouseDown:Boolean;
 		private var buttonStateDisabled:Boolean;
-		
-		private var requestImageLC:LocalConnection;
-		private var usingPreview:Boolean;
 		
 		// Error code "constants"
 		// Size check constants
@@ -157,7 +157,8 @@ package {
 		private var BUTTON_ACTION_SELECT_FILE:Number                = -100;
 		private var BUTTON_ACTION_SELECT_FILES:Number               = -110;
 		private var BUTTON_ACTION_START_UPLOAD:Number               = -120;
-		private var BUTTON_ACTION_JAVASCRIPT:Number					= -130;
+		private var BUTTON_ACTION_NONE:Number					    = -130;
+		private var BUTTON_ACTION_JAVASCRIPT:Number					= -130;	// DEPRECATED
 		
 		private var BUTTON_CURSOR_ARROW:Number						= -1;
 		private var BUTTON_CURSOR_HAND:Number						= -2;
@@ -173,7 +174,9 @@ package {
 				return;
 			}
 
+			var self:SWFUpload = this;
 			Security.allowDomain("*");	// Allow uploading to any domain
+			Security.allowInsecureDomain("*");	// Allow uploading from HTTP to HTTPS and HTTPS to HTTP
 			
 			// Keep Flash Player busy so it doesn't show the "flash script is running slowly" error
 			var counter:Number = 0;
@@ -185,17 +188,19 @@ package {
 
 
 			this.stage.align = StageAlign.TOP_LEFT;
-			this.stage.scaleMode = StageScaleMode.NO_SCALE;			
+			this.stage.scaleMode = StageScaleMode.NO_SCALE;
+			this.stage.addEventListener(Event.RESIZE, function (e:Event):void {
+				self.HandleStageResize(e);
+			});
 
 			// Setup the button and text label
 			this.buttonLoader = new Loader();
 			var doNothing:Function = function ():void { };
 			this.buttonLoader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, doNothing );
 			this.buttonLoader.contentLoaderInfo.addEventListener(HTTPStatusEvent.HTTP_STATUS, doNothing );
+			this.buttonLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, this.ButtonImageLoaded );
 			this.stage.addChild(this.buttonLoader);
 
-			var self:SWFUpload = this;
-			
 			this.stage.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
 				self.UpdateButtonState();
 				self.ButtonClickHandler(event);
@@ -212,6 +217,7 @@ package {
 				self.buttonStateMouseDown = event.buttonDown;
 				self.buttonStateOver = true;
 				self.UpdateButtonState();
+				ExternalCall.Simple(self.mouseOver_Callback);
 			});
 			this.stage.addEventListener(MouseEvent.MOUSE_OUT, function (event:MouseEvent):void {
 				self.buttonStateMouseDown = false;
@@ -223,6 +229,7 @@ package {
 				self.buttonStateMouseDown = false;
 				self.buttonStateOver = false;
 				self.UpdateButtonState();
+				ExternalCall.Simple(self.mouseOut_Callback);
 			});
 			
 			this.buttonTextField = new TextField();
@@ -260,24 +267,27 @@ package {
 			// a call directly to it on our instance.  There is no error handling for undefined callback functions.
 			// A developer would have to deliberately remove the default functions,set the variable to null, or remove
 			// it from the init function.
-			this.flashReady_Callback         = "SWFUpload.instances[\"" + this.movieName + "\"].flashReady";
-			this.fileDialogStart_Callback    = "SWFUpload.instances[\"" + this.movieName + "\"].fileDialogStart";
-			this.fileQueued_Callback         = "SWFUpload.instances[\"" + this.movieName + "\"].fileQueued";
-			this.fileQueueError_Callback     = "SWFUpload.instances[\"" + this.movieName + "\"].fileQueueError";
-			this.fileDialogComplete_Callback = "SWFUpload.instances[\"" + this.movieName + "\"].fileDialogComplete";
+			this.flashReady_Callback            = "SWFUpload.instances[\"" + this.movieName + "\"].flashReady";
+			this.fileDialogStart_Callback       = "SWFUpload.instances[\"" + this.movieName + "\"].fileDialogStart";
+			this.fileQueued_Callback            = "SWFUpload.instances[\"" + this.movieName + "\"].fileQueued";
+			this.fileQueueError_Callback        = "SWFUpload.instances[\"" + this.movieName + "\"].fileQueueError";
+			this.fileDialogComplete_Callback    = "SWFUpload.instances[\"" + this.movieName + "\"].fileDialogComplete";
 
-			this.uploadStart_Callback        = "SWFUpload.instances[\"" + this.movieName + "\"].uploadStart";
-			this.uploadProgress_Callback     = "SWFUpload.instances[\"" + this.movieName + "\"].uploadProgress";
-			this.uploadError_Callback        = "SWFUpload.instances[\"" + this.movieName + "\"].uploadError";
-			this.uploadSuccess_Callback      = "SWFUpload.instances[\"" + this.movieName + "\"].uploadSuccess";
+			this.uploadStart_Callback           = "SWFUpload.instances[\"" + this.movieName + "\"].uploadStart";
+			this.uploadProgress_Callback        = "SWFUpload.instances[\"" + this.movieName + "\"].uploadProgress";
+			this.uploadError_Callback           = "SWFUpload.instances[\"" + this.movieName + "\"].uploadError";
+			this.uploadSuccess_Callback         = "SWFUpload.instances[\"" + this.movieName + "\"].uploadSuccess";
 
-			this.uploadComplete_Callback     = "SWFUpload.instances[\"" + this.movieName + "\"].uploadComplete";
+			this.uploadComplete_Callback        = "SWFUpload.instances[\"" + this.movieName + "\"].uploadComplete";
 
-			this.debug_Callback              = "SWFUpload.instances[\"" + this.movieName + "\"].debug";
+			this.debug_Callback                 = "SWFUpload.instances[\"" + this.movieName + "\"].debug";
 
 			this.testExternalInterface_Callback = "SWFUpload.instances[\"" + this.movieName + "\"].testExternalInterface";
-			this.cleanUp_Callback            = "SWFUpload.instances[\"" + this.movieName + "\"].cleanUp";
-			this.buttonAction_Callback       = "SWFUpload.instances[\"" + this.movieName + "\"].buttonAction";
+			this.cleanUp_Callback               = "SWFUpload.instances[\"" + this.movieName + "\"].cleanUp";
+			
+			this.mouseOut_Callback              = "SWFUpload.instances[\"" + this.movieName + "\"].mouseOut";
+			this.mouseOver_Callback             = "SWFUpload.instances[\"" + this.movieName + "\"].mouseOver";
+			this.mouseClick_Callback            = "SWFUpload.instances[\"" + this.movieName + "\"].mouseClick";
 			
 			// Get the Flash Vars
 			this.uploadURL = decodeURIComponent(root.loaderInfo.parameters.uploadURL);
@@ -355,13 +365,6 @@ package {
 				this.SetAssumeSuccessTimeout(0);
 			}
 
-			
-			try {
-				this.SetButtonDimensions(Number(decodeURIComponent(root.loaderInfo.parameters.buttonWidth)), Number(decodeURIComponent(root.loaderInfo.parameters.buttonHeight)));
-			} catch (ex:Object) {
-				this.SetButtonDimensions(0, 0);
-			}
-
 			try {
 				this.SetButtonImageURL(String(decodeURIComponent(root.loaderInfo.parameters.buttonImageURL)));
 			} catch (ex:Object) {
@@ -404,16 +407,7 @@ package {
 				this.SetButtonCursor(this.BUTTON_CURSOR_ARROW);
 			}
 
-			try {
-				this.usingPreview = decodeURIComponent(root.loaderInfo.parameters.usingPreview) == "true" ? true : false;
-			} catch (ex:Object) {
-				this.usingPreview = false;
-			}
-			
-			
 			this.SetupExternalInterface();
-			
-			this.SetupPreview();
 			
 			this.Debug("SWFUpload Init Complete");
 			this.PrintDebugInfo();
@@ -424,12 +418,34 @@ package {
 			}
 			
 			// Start periodically checking the external interface
-			var oSelf:SWFUpload = this;
 			this.restoreExtIntTimer = new Timer(1000, 0);
-			this.restoreExtIntTimer.addEventListener(TimerEvent.TIMER, function ():void { oSelf.CheckExternalInterface();} );
+			this.restoreExtIntTimer.addEventListener(TimerEvent.TIMER, function ():void { self.CheckExternalInterface();} );
 			this.restoreExtIntTimer.start();
+			
 		}
 
+		private function HandleStageResize(e:Event):void {
+			try {
+				if (this.stage.stageWidth > 0 || this.stage.stageHeight > 0) {
+					var buttonHeight:Number = this.buttonLoader.contentLoaderInfo.height / 4;
+
+					// Scale the button cursor
+					this.buttonCursorSprite.width = this.stage.stageWidth;
+					this.buttonCursorSprite.height = this.stage.stageHeight;
+					
+					// scale the button
+					this.buttonLoader.height = this.stage.stageHeight * 4;
+					this.buttonLoader.scaleX = this.buttonLoader.scaleY;
+					
+					// scale the text area (it doesn't resize but it still needs to fit)
+					this.buttonTextField.width = this.stage.stageWidth;
+					this.buttonTextField.height = this.stage.stageHeight;
+					
+					this.Debug("Stage:" + this.stage.stageWidth + " by " + this.stage.stageHeight);
+				}
+			} catch (ex:Error) {}
+		}
+		
 		// Used to periodically check that the External Interface functions are still working
 		private function CheckExternalInterface():void {
 			if (!ExternalCall.Bool(this.testExternalInterface_Callback)) {
@@ -487,7 +503,6 @@ package {
 				ExternalInterface.addCallback("SetDebugEnabled", this.SetDebugEnabled);
 
 				ExternalInterface.addCallback("SetButtonImageURL", this.SetButtonImageURL);
-				ExternalInterface.addCallback("SetButtonDimensions", this.SetButtonDimensions);
 				ExternalInterface.addCallback("SetButtonText", this.SetButtonText);
 				ExternalInterface.addCallback("SetButtonTextPadding", this.SetButtonTextPadding);
 				ExternalInterface.addCallback("SetButtonTextStyle", this.SetButtonTextStyle);
@@ -595,6 +610,7 @@ package {
 
 			// If the 100% upload progress hasn't been called then call it now
 			if (!file.finalUploadProgress) {
+				file.finalUploadProgress = true;
 				this.Debug("Event: uploadProgress (simulated 100%): File ID: " + file.id + ". Bytes: " + file.file_reference.size + ". Total: " + file.file_reference.size);
 				ExternalCall.UploadProgress(this.uploadProgress_Callback, file.ToJavaScriptObject(), file.file_reference.size, file.file_reference.size);
 			}
@@ -833,6 +849,8 @@ package {
 		 * If the file is currently uploading it is cancelled and the uploadComplete
 		 * event gets called.
 		 * If the file is not currently uploading then only the uploadCancelled event is fired.
+		 * 
+		 * The triggerComplete is used by the resize stuff to cancel the upload
 		 * */
 		private function CancelUpload(file_id:String, triggerErrorEvent:Boolean = true):void {
 			var file_item:FileItem = null;
@@ -856,6 +874,7 @@ package {
 				} else {
 					this.Debug("Event: cancelUpload: File ID: " + this.current_file_item.id + ". Cancelled current upload. Suppressed uploadError event.");
 				}
+				
 				this.UploadComplete(false);
 			} else if (file_id) {
 				// Find the file in the queue
@@ -1175,6 +1194,25 @@ package {
 			}
 		}
 		
+		private function ButtonImageLoaded(e:Event):void {
+			var self:SWFUpload = this;
+			this.Debug("Button Image Loaded");
+			this.HandleStageResize(null);
+
+			this.sizeTimer = new Timer(10, 0);
+			this.sizeTimer.addEventListener(TimerEvent.TIMER, function ():void {
+				this.Debug("Stage:" + this.stage.stageWidth + " by " + this.stage.stageHeight);
+				if (self.stage.stageWidth > 0 || self.stage.stageHeight > 0) {
+					this.removeEventListener(TimerEvent.TIMER, arguments.callee);
+					this.stop();
+					self.HandleStageResize(null);
+					self.sizeTimer = null;
+				}
+			} );
+			this.sizeTimer.start();
+		}
+
+		
 		private function ButtonClickHandler(e:MouseEvent):void {
 			if (!this.buttonStateDisabled) {
 				if (this.buttonAction === this.BUTTON_ACTION_SELECT_FILE) {
@@ -1183,12 +1221,14 @@ package {
 				else if (this.buttonAction === this.BUTTON_ACTION_START_UPLOAD) {
 					this.StartUpload();
 				}
-				else if (this.buttonAction === this.BUTTON_ACTION_JAVASCRIPT) {
-					ExternalCall.Simple(this.buttonAction_Callback);
+				else if (this.buttonAction === this.BUTTON_ACTION_NONE) {
+					ExternalCall.Simple(this.mouseClick_Callback);
 				}
 				else {
 					this.SelectFiles();
 				}
+			} else {
+				ExternalCall.Simple(this.mouseClick_Callback);
 			}
 		}
 		
@@ -1200,35 +1240,19 @@ package {
 			this.buttonLoader.y = yOffset;
 			
 			if (this.buttonStateDisabled) {
-				this.buttonLoader.y = this.buttonHeight * -3 + yOffset;
+				this.buttonLoader.y = (this.buttonLoader.height / 4) * -3 + yOffset;
 			}
 			else if (this.buttonStateMouseDown) {
-				this.buttonLoader.y = this.buttonHeight * -2 + yOffset;
+				this.buttonLoader.y = (this.buttonLoader.height / 4) * -2 + yOffset;
 			}
 			else if (this.buttonStateOver) {
-				this.buttonLoader.y = this.buttonHeight * -1 + yOffset;
+				this.buttonLoader.y = (this.buttonLoader.height / 4) * -1 + yOffset;
 			}
 			else {
 				this.buttonLoader.y = -yOffset;
 			}
 		};
 
-		private function SetButtonDimensions(width:Number = -1, height:Number = -1):void {
-			if (width >= 0) {
-				this.buttonWidth = width;
-			}
-			if (height >= 0) {
-				this.buttonHeight = height;
-			}
-			
-			this.buttonTextField.width = this.buttonWidth;
-			this.buttonTextField.height = this.buttonHeight;
-			this.buttonCursorSprite.width = this.buttonWidth;
-			this.buttonCursorSprite.height = this.buttonHeight;
-			
-			this.UpdateButtonState();
-		}
-		
 		private function SetButtonText(button_text:String):void {
 			this.buttonText = button_text;
 			
@@ -1353,6 +1377,8 @@ package {
 		}
 		
 		private function PrepareResizedImageCompleteHandler(event:ImageResizerEvent):void {
+			event.target.removeEventListener(ImageResizerEvent.COMPLETE, this.PrepareResizedImageCompleteHandler);
+			event.target.removeEventListener(ErrorEvent.ERROR, this.PrepareResizedImageErrorHandler);
 			this.Debug("PrepareResizedImageCompleteHandler(): Finished resizing. Initializing MultipartURLLoader.");
 			
 			if (this.current_file_item != null) {
@@ -1362,9 +1388,20 @@ package {
 			}
 		}		
 		private function PrepareResizedImageErrorHandler(event:ErrorEvent):void {
+			event.target.removeEventListener(ImageResizerEvent.COMPLETE, this.PrepareResizedImageCompleteHandler);
+			event.target.removeEventListener(ErrorEvent.ERROR, this.PrepareResizedImageErrorHandler);
+
 			this.Debug("PrepareResizedImageErrorHandler(): Error resizing image: " + event.text);
-			this.CancelUpload(this.current_file_item.id, false);
-			ExternalCall.UploadError(this.uploadError_Callback, this.ERROR_CODE_RESIZE, this.current_file_item.ToJavaScriptObject(), "Error generating resized image. " + event.text);
+
+			if (this.current_file_item.file_status != FileItem.FILE_STATUS_ERROR) {
+				this.upload_errors++;
+				this.current_file_item.file_status = FileItem.FILE_STATUS_ERROR;
+
+				this.Debug("Event: uploadError : Resize Error : File ID: " + this.current_file_item.id + ". Error: " + event.text);
+				ExternalCall.UploadError(this.uploadError_Callback, this.ERROR_CODE_RESIZE, this.current_file_item.ToJavaScriptObject(), "Error generating resized image. " + event.text);
+			}
+
+			this.UploadComplete(true);
 		}		
 
 		// This starts the upload when the user returns TRUE from the uploadStart event.  Rather than just have the value returned from
@@ -1398,12 +1435,13 @@ package {
 						
 						ExternalCall.UploadError(this.uploadError_Callback, this.ERROR_CODE_MISSING_UPLOAD_URL, js_object, "Upload URL string is empty.");
 					} else {
-						this.Debug("ReturnUploadStart(): File accepted by startUpload event and readied for upload.  Starting upload to " + request.url + " for File ID: " + this.current_file_item.id);
 						this.current_file_item.file_status = FileItem.FILE_STATUS_IN_PROGRESS;
 						
 						if (this.current_file_item.upload_type === FileItem.UPLOAD_TYPE_NORMAL) {
+							this.Debug("ReturnUploadStart(): File accepted by startUpload event and readied for standard upload.  Starting upload to " + request.url + " for File ID: " + this.current_file_item.id);
 							this.current_file_item.file_reference.upload(request, this.filePostName, false);
 						} else {
+							this.Debug("ReturnUploadStart(): File accepted by startUpload event and readied for resized upload.  Starting upload to " + request.url + " for File ID: " + this.current_file_item.id);
 							this.current_file_item.resized_uploader.upload(request, this.filePostName);
 						}
 					}
@@ -1425,6 +1463,10 @@ package {
 
 				// Re-queue the FileItem
 				this.current_file_item.file_status = FileItem.FILE_STATUS_QUEUED;
+				if (this.current_file_item.resized_uploader != null) {
+					this.current_file_item.resized_uploader.dispose();
+					this.current_file_item.resized_uploader = null;
+				}
 				js_object = this.current_file_item.ToJavaScriptObject();
 				this.file_queue.unshift(this.current_file_item);
 				this.current_file_item = null;
@@ -1442,6 +1484,10 @@ package {
 			var jsFileObj:Object = this.current_file_item.ToJavaScriptObject();
 			
 			this.removeEventListeners(this.current_file_item);
+			if (this.current_file_item.resized_uploader != null) {
+				this.current_file_item.resized_uploader.dispose();
+				this.current_file_item.resized_uploader = null;
+			}
 
 			if (!eligible_for_requeue || this.requeueOnError == false) {
 				//this.current_file_item.file_reference = null;
@@ -1457,76 +1503,6 @@ package {
 			ExternalCall.UploadComplete(this.uploadComplete_Callback, jsFileObj);
 		}
 
-		/* *****************************
-		 *  Preview Functions
-		 * ***************************** */
-		private function SetupPreview():void
-		{
-			if (!this.usingPreview) {
-				return;
-			}
-			
-			this.requestImageLC = new LocalConnection();
-			this.requestImageLC.client = this;
-			try {
-				this.requestImageLC.connect(this.movieName);
-			} catch (ex:Error) {
-				this.Debug(ex.message);
-			}
-		}
-		
-		private var senderConnectionName:String = "";
-		private var senderFileID:String = "";
-		public function RequestImage(connectionName:String, file_id:String):void {
-			this.Debug("Image Request: " + connectionName + ", File ID: " + file_id);
-			
-			var file:FileItem = this.FindFileInFileIndex(file_id);
-			if (file == null) {
-				this.Debug("Image Request: file not found");
-				return;
-			}
-			
-			this.senderConnectionName = connectionName;
-			this.senderFileID = file_id;
-			
-			//var resizer:ImageResizer = new ImageResizer(file, width, height, encoder, quality);
-			//resizer.addEventListener(ImageResizerEvent.COMPLETE, this.RequestImageResizeComplete);
-			//resizer.ResizeImage();
-
-			file.file_reference.addEventListener(Event.COMPLETE, this.fileDataLoaded);
-			file.file_reference.load();
-			
-		}
-		
-		private function fileDataLoaded(e:Event):void {
-			FileReference(e.target).removeEventListener(Event.COMPLETE, this.fileDataLoaded);
-			this.RequestImageResizeComplete(new ImageResizerEvent(ImageResizerEvent.COMPLETE, FileReference(e.target).data, 0));
-		}
-
-		private function RequestImageResizeComplete(e:ImageResizerEvent):void {
-			try {
-				this.Debug("Image Request - Done Resizing");
-
-				var sender:LocalConnection = new LocalConnection();
-				sender.send(this.senderConnectionName, "StartImageSend", this.senderFileID);
-				var buffer:ByteArray = new ByteArray();
-
-				this.Debug("Image Request - Starting send (" + e.data.length + ")");
-				e.data.position = 0;
-				var bufferSize:int = 40000;
-				while ((bufferSize = Math.min(e.data.bytesAvailable, 40000)) > 0) {
-					buffer.clear();
-					e.data.readBytes(buffer, 0, bufferSize);
-					sender.send(this.senderConnectionName, "ReceiveImageChunk", this.senderFileID, buffer);
-				}
-				
-				this.Debug("Image Request - Done sending");
-				
-				sender.send(this.senderConnectionName, "EndImageSend", this.senderFileID);
-			} catch (ex:Error) {
-				this.Debug(ex.message);
-			}
-		}
 		
 		/* *************************************************************
 			Utility Functions
@@ -1634,7 +1610,7 @@ package {
 
 		private function PrintDebugInfo():void {
 			var debug_info:String = "\n----- SWF DEBUG OUTPUT ----\n";
-			debug_info += "Build Number:           " + this.build_number + "\n";
+			debug_info += "Version:                " + this.build_number + "\n";
 			debug_info += "movieName:              " + this.movieName + "\n";
 			debug_info += "Upload URL:             " + this.uploadURL + "\n";
 			debug_info += "File Types String:      " + this.fileTypes + "\n";
@@ -1644,7 +1620,6 @@ package {
 			debug_info += "File Size Limit:        " + this.fileSizeLimit + " bytes\n";
 			debug_info += "File Upload Limit:      " + this.fileUploadLimit + "\n";
 			debug_info += "File Queue Limit:       " + this.fileQueueLimit + "\n";
-			debug_info += "Using Preview:          " + this.usingPreview + "\n";
 			debug_info += "Post Params:\n";
 			for (var key:String in this.uploadPostObject) {
 				if (this.uploadPostObject.hasOwnProperty(key)) {
