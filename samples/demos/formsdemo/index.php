@@ -4,7 +4,6 @@
 <title>SWFUpload Demos - Classic Form Demo</title>
 <link href="../css/default.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="../swfupload/swfupload.js"></script>
-<script type="text/javascript" src="js/swfupload.swfobject.js"></script>
 <script type="text/javascript" src="js/fileprogress.js"></script>
 <script type="text/javascript" src="js/handlers.js"></script>
 <script type="text/javascript">
@@ -20,8 +19,8 @@
 				file_size_limit : "10 MB",
 				file_types : "*.*",			// or you could use something like: "*.doc;*.wpd;*.pdf",
 				file_types_description : "All Files",
-				file_upload_limit : "0",
-				file_queue_limit : "1",
+				file_upload_limit : 0,
+				file_queue_limit : 1,
 
 				// Event handler settings
 				swfupload_loaded_handler : swfUploadLoaded,

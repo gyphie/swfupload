@@ -13,23 +13,19 @@
 	ini_set("html_errors", "0");
 
 	// Check the upload
-/*	if (!isset($_FILES["Filedata"]) || !is_uploaded_file($_FILES["Filedata"]["tmp_name"]) || $_FILES["Filedata"]["error"] != 0) {
+	if (!isset($_POST["Filedata"])) {
 		echo "ERROR:invalid upload";
 		exit(0);
 	}
-*/
 
-	$fileData = $_POST["Filedata"];
 
-	// Use a output buffering to load the image into a variable
-	ob_start();
-	echo $fileData;
-	$imagevariable = ob_get_contents();
-	ob_end_clean();
+	if (!isset($_SESSION["file_info"])) {
+		$_SESSION["file_info"] = array();
+	}
 
-	$file_id = md5(rand()*100000);
+	$file_id = md5(rand()*10000000);
 	
-	$_SESSION["file_info"][$file_id] = $imagevariable;
+	$_SESSION["file_info"][$file_id] = $_POST["Filedata"];
 
 	echo "FILEID:" . $file_id;	// Return the file id to the script
 	

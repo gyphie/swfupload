@@ -1,3 +1,5 @@
+var uploadInProgress = false;
+
 function fileQueueError(file, errorCode, message) {
 	try {
 		var imageName = "error.gif";
@@ -35,8 +37,8 @@ function fileQueueError(file, errorCode, message) {
 
 function fileDialogComplete(numFilesSelected, numFilesQueued) {
 	try {
-		if (numFilesQueued > 0) {
-			this.startResizedUpload(this.getFile(0).ID, 100, 100, SWFUpload.RESIZE_ENCODING.JPEG, 100);
+		if (numFilesQueued > 0 && !uploadInProgress) {
+			ShowPreview(this.getQueueFile(0).id);
 		}
 	} catch (ex) {
 		this.debug(ex);
@@ -89,12 +91,13 @@ function uploadComplete(file) {
 	try {
 		/*  I want the next upload to continue automatically so I'll call startUpload here */
 		if (this.getStats().files_queued > 0) {
-			this.startResizedUpload(this.getFile(0).ID, 100, 100, SWFUpload.RESIZE_ENCODING.JPEG, 100);
+			ShowPreview(this.getQueueFile(0).id);
 		} else {
-			var progress = new FileProgress(file,  this.customSettings.upload_target);
+			var progress = new FileProgress(file, this.customSettings.upload_target);
 			progress.setComplete();
 			progress.setStatus("All images received.");
 			progress.toggleCancel(false);
+			uploadInProgress = false;
 		}
 	} catch (ex) {
 		this.debug(ex);
@@ -141,6 +144,32 @@ function uploadError(file, errorCode, message) {
 		this.debug(ex3);
 	}
 
+}
+
+var preview = null;
+function ShowPreview(id) {
+	uploadInProgress = true;
+	if (preview === null) {
+		preview = new SWFUpload.Preview({
+			flash_url : "../swfupload/preview.swf",
+			preview_placeholder_id : "spanPreview",
+			preview_loaded_handler : function () { PreviewLoadedHandler.call(this, id); },
+			preview_complete_handler : ShowPreviewComplete,
+			debug : true,
+			width : 100,
+			height: 100,
+			resize_to_fit : true
+		});
+	} else {
+		PreviewLoadedHandler.call(preview, id);
+	}
+}
+function PreviewLoadedHandler(id) {
+	this.getPreview(swfu.movieName, id, this.settings.width, this.settings.height);
+}
+function ShowPreviewComplete() {
+	this.debug("Preview Complete");
+	swfu.startResizedUpload(swfu.getQueueFile(0).id, 100, 100, SWFUpload.RESIZE_ENCODING.JPEG, 100);
 }
 
 

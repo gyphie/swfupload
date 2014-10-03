@@ -8,7 +8,7 @@
     <movie fps="15" />
     <movie width="300" />
     <movie height="300" />
-    <movie version="9" />
+    <movie version="10" />
     <movie background="#FFFFFF" />
   </output>
   <!-- Other classes to be compiled into your SWF -->
@@ -65,7 +65,7 @@
   </compileTargets>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
-    <!-- example: <hidden path="..." /> -->
+    <hidden path="deploy.bat" />
   </hiddenPaths>
   <!-- Executed before build -->
   <preBuildCommand />

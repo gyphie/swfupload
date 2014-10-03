@@ -8,6 +8,7 @@
 <title>SWFUpload Demos - Application Demo</title>
 <link href="../css/default.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="../swfupload/swfupload.js"></script>
+<script type="text/javascript" src="../swfupload/preview.js"></script>
 <script type="text/javascript" src="js/handlers.js"></script>
 <script type="text/javascript">
 		var swfu;
@@ -53,7 +54,7 @@
 				},
 				
 				// Debug Settings
-				debug: false
+				debug: true
 			});
 		};
 	</script>
@@ -78,6 +79,7 @@
 	} else {
 	?>
 	<form>
+		<div style="width: 100px; float: right;"><span id="spanPreview"></span></div>
 		<div style="width: 180px; height: 18px; border: solid 1px #7FAAFF; background-color: #C5D9FF; padding: 2px;">
 			<span id="spanButtonPlaceholder"></span>
 		</div>
