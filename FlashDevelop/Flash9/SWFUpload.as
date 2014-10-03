@@ -27,7 +27,7 @@ package {
 			var SWFUpload:SWFUpload = new SWFUpload();
 		}
 		
-		private const build_number:String = "SWFUPLOAD 2.1.0 FP9 2008-03-12";
+		private const build_number:String = "SWFUPLOAD 2.1.0 FP9 2008-05-12";
 		
 		// State tracking variables
 		private var fileBrowserMany:FileReferenceList = new FileReferenceList();
@@ -75,9 +75,6 @@ package {
 		private var useQueryString:Boolean = false;
 		private var requeueOnError:Boolean = false;
 		private var debugEnabled:Boolean;
-
-		private var credentials_name:String = "";
-		private var credentials_password:String = "";
 
 		// Error code "constants"
 		// Size check constants
@@ -222,7 +219,6 @@ package {
 				ExternalInterface.addCallback("SetStats", this.SetStats);
 				ExternalInterface.addCallback("GetFile", this.GetFile);
 				ExternalInterface.addCallback("GetFileByIndex", this.GetFileByIndex);
-				//ExternalInterface.addCallback("SetCredentials", this.SetCredentials);	// Will be introduced with the Flex 3 SDK
 				
 				ExternalInterface.addCallback("AddFileParam", this.AddFileParam);
 				ExternalInterface.addCallback("RemoveFileParam", this.RemoveFileParam);
@@ -262,8 +258,13 @@ package {
 		}
 		
 		private function FileProgress_Handler(event:ProgressEvent):void {
-			this.Debug("Event: uploadProgress: File ID: " + this.current_file_item.id + ". Bytes: " + event.bytesLoaded + ". Total: " + event.bytesTotal);
-			ExternalCall.UploadProgress(this.uploadProgress_Callback, this.current_file_item.ToJavaScriptObject(), event.bytesLoaded, event.bytesTotal);
+			// On early than Mac OS X 10.3 bytesLoaded is always -1, convert this to zero. Do bytesTotal for good measure.
+			//  http://livedocs.adobe.com/flex/3/langref/flash/net/FileReference.html#event:progress
+			var bytesLoaded:Number = event.bytesLoaded < 0 ? 0 : event.bytesLoaded;
+			var bytesTotal:Number = event.bytesTotal < 0 ? 0 : event.bytesTotal;
+			
+			this.Debug("Event: uploadProgress: File ID: " + this.current_file_item.id + ". Bytes: " + bytesLoaded + ". Total: " + bytesTotal);
+			ExternalCall.UploadProgress(this.uploadProgress_Callback, this.current_file_item.ToJavaScriptObject(), bytesLoaded, bytesTotal);
 		}
 
 		private function ServerData_Handler(event:DataEvent):void {
@@ -417,7 +418,11 @@ package {
 			this.Debug("Event: fileDialogStart : Browsing files. Single Select. Allowed file types: " + allowed_file_types);
 			ExternalCall.Simple(this.fileDialogStart_Callback);
 
-			this.fileBrowserOne.browse([new FileFilter(allowed_file_types_description, allowed_file_types)]);
+			try {
+				this.fileBrowserOne.browse([new FileFilter(allowed_file_types_description, allowed_file_types)]);
+			} catch (ex:Error) {
+				this.Debug("Exception: " + ex.toString());
+			}
 		}
 		
 		// Opens a file browser dialog that allows multiple files to be selected.
@@ -430,8 +435,12 @@ package {
 
 			this.Debug("Event: fileDialogStart : Browsing files. Multi Select. Allowed file types: " + allowed_file_types);
 			ExternalCall.Simple(this.fileDialogStart_Callback);
-			
-			this.fileBrowserMany.browse([new FileFilter(allowed_file_types_description, allowed_file_types)]);
+
+			try {
+				this.fileBrowserMany.browse([new FileFilter(allowed_file_types_description, allowed_file_types)]);
+			} catch (ex:Error) {
+				this.Debug("Exception: " + ex.toString());
+			}
 		}
 
 
@@ -533,13 +542,7 @@ package {
 			}
 
 		}
-		/*
-		 This won't be used until Flex 3 comes out.
-		private function SetCredentials(name:String, password:String):void {
-			this.credentials_name = name;
-			this.credentials_password = password;
-		}
-		*/
+
 		private function GetStats():Object {
 			return {
 				in_progress : this.current_file_item == null ? 0 : 1,
@@ -868,14 +871,6 @@ package {
 			var request:URLRequest = new URLRequest();
 			request.method = URLRequestMethod.POST;
 			
-			/*if (this.credentials_name != "") {
-				request.shouldAuthenticate = true;
-				request.setLoginCredentials(this.credentials_name, this.credentials_password);
-			} else {
-				request.shouldAuthenticate = false;
-				request.setLoginCredentials("", "");
-			}*/
-		
 			var file_post:Object = this.current_file_item.GetPostObject();
 			
 			if (this.useQueryString) {
@@ -883,7 +878,7 @@ package {
 				for (key in this.uploadPostObject) {
 					this.Debug("Global URL Item: " + key + "=" + this.uploadPostObject[key]);
 					if (this.uploadPostObject.hasOwnProperty(key)) {
-						pairs.push(key + "=" + this.uploadPostObject[key]);
+						pairs.push(escape(key) + "=" + escape(this.uploadPostObject[key]));
 					}
 				}
 
@@ -897,8 +892,6 @@ package {
 				request.url = this.uploadURL  + (this.uploadURL.indexOf("?") > -1 ? "&" : "?") + pairs.join("&");
 					
 			} else {
-				request.url = this.uploadURL;
-
 				var key:String;
 				var post:URLVariables = new URLVariables();
 				for (key in this.uploadPostObject) {
@@ -915,6 +908,7 @@ package {
 					}
 				}
 
+				request.url = this.uploadURL;
 				request.data = post;
 			}
 			
