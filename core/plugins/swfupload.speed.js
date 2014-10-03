@@ -124,10 +124,6 @@ if (typeof(SWFUpload) === "function") {
 	SWFUpload.speed.extendFile = function (file, trackingList) {
 		var tracking;
 		
-		if (!file) {
-			return file;
-		}
-		
 		if (trackingList) {
 			tracking = trackingList[file.id];
 		}
