@@ -6,7 +6,8 @@
 	session_start();
 
 	// The Demos don't save files
-
+	
+	
 	if (!isset($_FILES["Filedata"]) || !is_uploaded_file($_FILES["Filedata"]["tmp_name"]) || $_FILES["Filedata"]["error"] != 0) {
 		echo "There was a problem with the upload";
 	}
