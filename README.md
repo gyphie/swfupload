@@ -1,3 +1,4 @@
+![SWFUpload Logo](https://github.com/gyphie/swfupload/blob/master/logo.png)
 swfupload
 =========
 
