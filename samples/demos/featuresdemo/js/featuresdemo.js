@@ -22,7 +22,14 @@ var FeaturesDemo = {
 		};
 		FeaturesDemo.btnCancelSelectedFile.onclick = function () {
 			try {
-				FeaturesDemo.cancelSelectedFile();
+				FeaturesDemo.cancelSelectedFile(true);
+			} catch (ex) {
+			}
+			return false;
+		};
+		FeaturesDemo.btnCancelSelectedFileNoEvent.onclick = function () {
+			try {
+				FeaturesDemo.cancelSelectedFile(false);
 			} catch (ex) {
 			}
 			return false;
@@ -81,6 +88,7 @@ var FeaturesDemo = {
 		FeaturesDemo.btnStartSelectedFile = document.getElementById("btnStartSelectedFile");
 		FeaturesDemo.btnStopUpload = document.getElementById("btnStopUpload");
 		FeaturesDemo.btnCancelSelectedFile = document.getElementById("btnCancelSelectedFile");
+		FeaturesDemo.btnCancelSelectedFileNoEvent = document.getElementById("btnCancelSelectedFileNoEvent");
 		FeaturesDemo.txtAddFileParamName = document.getElementById("txtAddFileParamName");
 		FeaturesDemo.txtAddFileParamValue = document.getElementById("txtAddFileParamValue");
 		FeaturesDemo.btnAddFileParam = document.getElementById("btnAddFileParam");
@@ -92,6 +100,7 @@ var FeaturesDemo = {
 		FeaturesDemo.txtAddParamValue = document.getElementById("txtAddParamValue");
 		FeaturesDemo.btnAddParam = document.getElementById("btnAddParam");
 		FeaturesDemo.txtUploadTarget = document.getElementById("txtUploadTarget");
+		FeaturesDemo.txtHTTPSuccess = document.getElementById("txtHTTPSuccess");
 		FeaturesDemo.btnUpdateDynamicSettings = document.getElementById("btnUpdateDynamicSettings");
 		FeaturesDemo.txtFlashHTML = document.getElementById("txtFlashHTML");
 		FeaturesDemo.txtMovieName = document.getElementById("txtMovieName");
@@ -136,6 +145,7 @@ var FeaturesDemo = {
 		FeaturesDemo.txtUploadTarget.value = "";
 		FeaturesDemo.txtFlashHTML.value = "";
 		FeaturesDemo.txtMovieName.value = "";
+		FeaturesDemo.txtHTTPSuccess.value = "";
 		FeaturesDemo.txtFilePostName.value = "";
 		FeaturesDemo.txtFileTypes.value = "";
 		FeaturesDemo.txtFileTypesDescription.value = "";
@@ -189,6 +199,7 @@ var FeaturesDemo = {
 		FeaturesDemo.txtUploadTarget.value = FeaturesDemo.SU.settings.upload_url;
 		FeaturesDemo.txtFlashHTML.value = FeaturesDemo.SU.getFlashHTML();
 		FeaturesDemo.txtMovieName.value = FeaturesDemo.SU.movieName;
+		FeaturesDemo.txtHTTPSuccess.value = FeaturesDemo.SU.settings.http_success.join(", ");
 		FeaturesDemo.txtFilePostName.value = FeaturesDemo.SU.settings.file_post_name;
 		FeaturesDemo.txtFileTypes.value = FeaturesDemo.SU.settings.file_types;
 		FeaturesDemo.txtFileTypesDescription.value = FeaturesDemo.SU.settings.file_types_description;
@@ -226,7 +237,7 @@ var FeaturesDemo = {
 	stopUpload: function () {
 		FeaturesDemo.SU.stopUpload();
 	},
-	cancelSelectedFile: function () {
+	cancelSelectedFile: function (triggerEvent) {
 		if (FeaturesDemo.selQueue.options.length === 0) {
 			alert("You must queue a file first");
 			return;
@@ -237,7 +248,7 @@ var FeaturesDemo = {
 		}
 
 		var file_id = FeaturesDemo.selQueue.value;
-		FeaturesDemo.SU.cancelUpload(file_id);
+		FeaturesDemo.SU.cancelUpload(file_id, triggerEvent);
 	},
 	addFileParam: function () {
 		if (FeaturesDemo.selQueue.selectedIndex === -1) {
@@ -306,6 +317,7 @@ var FeaturesDemo = {
 		// Build the param object
 		var params = FeaturesDemo.getParamsObject();
 		FeaturesDemo.SU.setPostParams(params);
+		FeaturesDemo.SU.setHTTPSuccess(FeaturesDemo.txtHTTPSuccess.value);
 		FeaturesDemo.SU.setFileTypes(FeaturesDemo.txtFileTypes.value, FeaturesDemo.txtFileTypesDescription.value);
 		FeaturesDemo.SU.setFileSizeLimit(FeaturesDemo.txtFileSizeLimit.value);
 		FeaturesDemo.SU.setFileUploadLimit(FeaturesDemo.txtFileUploadLimit.value);
@@ -353,6 +365,7 @@ var FeaturesDemo = {
 				upload_url : FeaturesDemo.SU.settings.upload_url,
 				use_query_string : FeaturesDemo.cbUseQueryString.checked,
 				requeue_on_error : FeaturesDemo.cbRequeueOnError.checked,
+				http_success : FeaturesDemo.txtHTTPSuccess.value.replace(" ", "").split(","),
 				post_params : FeaturesDemo.getParamsObject(),
 				file_size_limit : FeaturesDemo.txtFileSizeLimit.value,
 				file_post_name : FeaturesDemo.txtFilePostName.value,

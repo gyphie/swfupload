@@ -24,6 +24,7 @@
 				post_params: { "post_name1": "post_value1", "post_name2": "post_value2" }, 	// Here are some POST values to send. These can be changed dynamically
 				file_post_name: "Filedata",	// This is the "name" of the file item that the server-side script will receive. Setting this doesn't work in the Linux Flash Player
 				requeue_on_error: false,
+				http_success : [123, 444],
 
 				// File Upload Settings
 				file_size_limit : "100 MB",
@@ -125,6 +126,15 @@
 								</tr>
 							</table>
 						</div>
+						<div>
+							<table class="btn">
+								<tr>
+									<td class="btn-left"></td>
+									<td class="btn-center"><button id="btnCancelSelectedFileNoEvent" type="button" class="action">Cancel Selected File (no event)</button></td>
+									<td class="btn-right"></td>
+								</tr>
+							</table>
+						</div>
 					</div>
 					<div class="fieldset" id="fsStaticSettings">
 					<span class="legend">Static Settings</span>
@@ -221,6 +231,10 @@
 										<input id="txtUploadTarget" type="text" class="textbox" />
 									</div>
 									<div>
+										<label for="txtHTTPSuccess">http_success</label>
+										<input id="txtHTTPSuccess" type="text" class="textbox" />
+									</div>
+									<div>
 										<label for="txtFilePostName">file_post_name</label>
 										<input id="txtFilePostName" type="text" class="textbox" />
 									</div>
@@ -266,6 +280,10 @@
 										<input id="rbButtonActionStartUpload" type="radio" name="button_action" /> <label for="rbButtonActionStartUpload" style="display: inline;">Start Upload</label><br />
 										</div>
 									</div>
+									<div class="checkbox">
+										<input id="cbButtonDisabled" type="checkbox" />
+										<label for="cbButtonDisabled">button_disabled</label>
+									</div>
 									<div>
 										<label for="txtButtonImageUrl">button_image_url</label>
 										<input id="txtButtonImageUrl" type="text" class="textbox" />
@@ -293,10 +311,6 @@
 									<div>
 										<label for="txtButtonTextTopPadding">button_text_top_padding</label>
 										<input id="txtButtonTextTopPadding" type="text" class="textbox" />
-									</div>
-									<div class="checkbox">
-										<input id="cbButtonDisabled" type="checkbox" />
-										<label for="cbButtonDisabled">button_disabled</label>
 									</div>
 								</td>
 							</tr>
